@@ -1,5 +1,13 @@
 # Changelog
 
+#### v1.0.1 (02/18/2026)
+
+- fix initial value for PROJECT_REPOSITORY in deployment/.env.example
+- deployment: docker-compose: configure keycloak for local http deployment
+- github action: include arg to allow product repository override
+- deployment appserver: handle Python 3.12 base images by using MYW_PYTHON_SITE_DIRS env var
+- build_images: remove hardcoding platform to amd64
+
 #### v1.0.0 (02/13/2026)
 
 - PLAT-11613: deployment: add Kubernetes related files and instructions
