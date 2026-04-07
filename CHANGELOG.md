@@ -1,5 +1,11 @@
 # Changelog
 
+#### v1.1.0 (04/02/2026)
+
+- PLAT-13664: Cleans npm manifests from dev dependencies and removes node_modules in build
+- deployment tools: use PY_VERSION for site packages copy
+- docker-compose: Added .ai mount directory for use with ai-toolkit
+
 #### v1.0.1 (02/18/2026)
 
 - fix initial value for PROJECT_REPOSITORY in deployment/.env.example
