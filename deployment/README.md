@@ -18,6 +18,7 @@ This guide describes how to build Docker images and choose your deployment metho
     - [Local testing with Minikube](#local-testing-with-minikube)
     - [Web-based deployment with Rancher](#web-based-deployment-with-rancher)
     - [GitOps deployment with Rancher Fleet](#gitops-deployment-with-rancher-fleet)
+    - [Notification Manager with Centrifugo](#notification-manager-with-centrifugo)
   - [Running locally with Docker Compose](#running-locally-with-docker-compose)
     - [Start the containers](#start-the-containers)
     - [Manage the containers](#manage-the-containers)
@@ -85,7 +86,7 @@ Additional variables (for Docker Compose):
 
 ### Step 4: Build the images
 
-You can build images either locally using the provided build script or as part of an automated pipeline. 
+You can build images either locally using the provided build script or as part of an automated pipeline.
 
 **Option A: Using GitHub Actions (Recommended)**
 
@@ -151,6 +152,15 @@ For deploying to Kubernetes clusters (EKS, GKE, AKS, Rancher, or Minikube), foll
 [Rancher Fleet Deployment Guide](https://github.com/IQGeo/utils-project-template/wiki/Rancher-Fleet-Deployment-Guide)
 - GitOps/infrastructure-as-code continuous delivery using Rancher Fleet
 - Deploy from Git with environment-specific values
+
+### Notification Manager with Centrifugo
+
+Projects that use the Notification Manager module require a Centrifugo real-time messaging server. The platform Helm chart supports two deployment modes:
+
+- **External** (recommended for production) — deploy Centrifugo as a separate Helm release from `cloud-helm-centrifugo` and wire the platform with [iqgeo-platform-centrifugo.yaml](iqgeo-platform-centrifugo.yaml).
+- **Internal subchart** — set `centrifugo.enabled: true` in your platform values for a single-command deployment (best for dev/staging).
+
+See the [Centrifugo Deployment Guide](https://github.com/IQGeo/utils-project-template/wiki/Centrifugo-Deployment-Guide) for full instructions, architecture details, and troubleshooting.
 
 ---
 
