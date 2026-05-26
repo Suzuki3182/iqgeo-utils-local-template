@@ -1,5 +1,11 @@
 # Changelog
 
+#### v1.2.0 (Not Released)
+
+- DX-40: docker-compose: added OpenBao and Centrifugo services, disabled by default)
+- SRE-869: deployment: add Centrifugo deployment overlays and documentation; rename 'WFM Notification Manager' to 'Notification Manager' throughout
+- docs: add PostGIS image version guidance to devcontainer READMEs
+
 #### v1.1.0 (04/02/2026)
 
 - PLAT-13664: Cleans npm manifests from dev dependencies and removes node_modules in build
