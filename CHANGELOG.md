@@ -1,10 +1,12 @@
 # Changelog
 
-#### v1.2.0 (Not Released)
+#### v1.2.0 (05/27/2026)
 
-- DX-40: docker-compose: added OpenBao and Centrifugo services, disabled by default)
-- SRE-869: deployment: add Centrifugo deployment overlays and documentation; rename 'WFM Notification Manager' to 'Notification Manager' throughout
-- docs: add PostGIS image version guidance to devcontainer READMEs
+- DX-44: deployment: add Kubernetes overlay for standalone OpenBao
+- DX-40: docker-compose: added OpenBao and Centrifugo services, disabled by default
+- SRE-869: deployment: add Centrifugo deployment overlays and documentation;
+- Docs: add PostGIS image version guidance to devcontainer READMEs
+- Docs: add guidance on building WFM dev database (#100)
 
 #### v1.1.0 (04/02/2026)
 
