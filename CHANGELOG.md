@@ -1,6 +1,6 @@
 # Changelog
 
-#### v1.2.0 (05/27/2026)
+#### v1.2.0 (05/28/2026)
 
 - DX-44: deployment: add Kubernetes overlay for standalone OpenBao
 - DX-40: docker-compose: added OpenBao and Centrifugo services, disabled by default
