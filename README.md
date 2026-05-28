@@ -100,6 +100,19 @@ The comms_dev_db module has additional requirements.
       #!/bin/bash
       if ! myw_db $MYW_DB_NAME list versions --layout keys | grep myw_comms_schema | grep version=; then $MODULES/comms_dev_db/utils/comms_build_dev_db --database $MYW_DB_NAME; fi
 
+**wfm_dev_db**
+
+- For development environments only. In the `.iqgeorc.jsonc` file, include `"devOnly": true` in the properties for this module.
+- You must include `orchestration_manager`, `notification_manager` and `workflow_manager` modules (as well as their respective devdb moduels) in the project. 
+- If there's no db with a workflow_manager, notification_manager, or orchestration_manager schema, and you want to create the module dev_db's on startup of the container (following deployment), replace the contents of the file `.devcontainer/entrypoint.d/600_init_db.sh` with:
+
+    ```
+    #!/bin/bash
+    if ! myw_db $MYW_DB_NAME list versions --layout keys | grep mywnotif_schema | grep version=; then $MODULES/notification_manager_dev_db/build/build_dev_db --database $MYW_DB_NAME; fi
+    if ! myw_db $MYW_DB_NAME list versions --layout keys | grep iqgom_schema | grep version=; then $MODULES/orchestration_manager_dev_db/build/build_dev_db --database $MYW_DB_NAME; fi
+    if ! myw_db $MYW_DB_NAME list versions --layout keys | grep mywmywwfm_schema | grep version=; then $MODULES/workflow_manager_dev_db/build/build_dev_db --database $MYW_DB_NAME; fi
+    ```
+
 ### Update the project files using the IQGeo Utils VS Code extension
 
 After you edit the `.iqgeorc.jsonc` file to make it specific to your project, run the command to update project files. This automatically updates all related deployment files and maintains consistency across your project.

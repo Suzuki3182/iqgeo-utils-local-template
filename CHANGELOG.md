@@ -1,5 +1,13 @@
 # Changelog
 
+#### v1.2.0 (05/28/2026)
+
+- DX-44: deployment: add Kubernetes overlay for standalone OpenBao
+- DX-40: docker-compose: added OpenBao and Centrifugo services, disabled by default
+- SRE-869: deployment: add Centrifugo deployment overlays and documentation;
+- Docs: add PostGIS image version guidance to devcontainer READMEs
+- Docs: add guidance on building WFM dev database (#100)
+
 #### v1.1.0 (04/02/2026)
 
 - PLAT-13664: Cleans npm manifests from dev dependencies and removes node_modules in build
