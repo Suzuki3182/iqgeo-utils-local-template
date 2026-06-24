@@ -246,3 +246,4 @@ flowchart TD
     style L fill:#D50000,color:#FFFFFF
 
 ```
+# iqgeo-utils-local-template
