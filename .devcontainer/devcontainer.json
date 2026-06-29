@@ -1,5 +1,5 @@
 {
-    "name": "IQGeo Project Template",
+    "name": "Project for IQGeo Sandbox Testing",
     "dockerComposeFile": "docker-compose.yml",
     "service": "iqgeo",
     "runServices": ["iqgeo", "rq-dashboard", "pgadmin"],

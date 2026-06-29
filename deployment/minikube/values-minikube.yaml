@@ -2,7 +2,7 @@ global:
   # domain where the IQGeo solution will be hosted
   dnsZone: iqgeo.localhost
   # Short project name. Used in image repository names (e.g., iqgeo-{imagePrefix}-appserver). Set by project template tool.
-  imagePrefix: myproj
+  imagePrefix: sandbox
 
   db:
     name: myproj
@@ -16,7 +16,7 @@ image:
   # Examples: "engineering", "myproject", "production/iqgeo"
   # Combined with projectRegistry to form the full image path prefix
   # Leave empty if projectRegistry already includes the full path
-  projectRepository: myproject
+  projectRepository: sandbox
   
   tag: "latest"
 

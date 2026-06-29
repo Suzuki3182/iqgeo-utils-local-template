@@ -1,0 +1,41 @@
+# =============================================================================
+# Argo CD Application: pgAdmin Database Admin
+# =============================================================================
+# Manages the pgAdmin deployment from raw Kubernetes manifests.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pgadmin-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: iqgeo
+    iqgeo/environment: dev
+    iqgeo/component: tooling
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: iqgeo
+
+  source:
+    repoURL: "https://github.com/IQGeo/utils-project-template.git"
+    targetRevision: main
+    path: argocd/environments/dev/manifests/pgadmin
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: suzuki3182-dev
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: false
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 3m

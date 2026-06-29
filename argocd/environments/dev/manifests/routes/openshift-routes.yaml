@@ -1,0 +1,58 @@
+# OpenShift Routes for Dev Environment
+# Managed by Argo CD - do not apply manually
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: iqgeo-platform
+  labels:
+    app: iqgeo-platform
+    iqgeo/environment: dev
+spec:
+  host: iqgeo-platform-suzuki3182-dev.apps.rm2.thpm.p1.openshiftapps.com
+  to:
+    kind: Service
+    name: iqgeo-platform
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+    iqgeo/environment: dev
+spec:
+  host: keycloak-suzuki3182-dev.apps.rm2.thpm.p1.openshiftapps.com
+  to:
+    kind: Service
+    name: keycloak
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: pgadmin
+  labels:
+    app: pgadmin
+    iqgeo/environment: dev
+spec:
+  host: pgadmin-suzuki3182-dev.apps.rm2.thpm.p1.openshiftapps.com
+  to:
+    kind: Service
+    name: pgadmin
+    weight: 100
+  port:
+    targetPort: 5050
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

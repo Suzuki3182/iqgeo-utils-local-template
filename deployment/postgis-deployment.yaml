@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-postgis
+  namespace: suzuki3182-dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgis
+  namespace: suzuki3182-dev
+  labels:
+    app: postgis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgis
+  template:
+    metadata:
+      labels:
+        app: postgis
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: postgis
+          image: ghcr.io/iqgeo/docker-postgis/postgis:15-3.5
+          ports:
+            - containerPort: 5432
+          env:
+            - name: PGDATA
+              value: /opt/iqgeo/data/pgdata
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+          volumeMounts:
+            - name: pgdata
+              mountPath: /opt/iqgeo/data
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: pvc-postgis
+      imagePullSecrets:
+        - name: container-registry
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgis
+  namespace: suzuki3182-dev
+  labels:
+    app: postgis
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: postgis

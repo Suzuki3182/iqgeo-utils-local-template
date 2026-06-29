@@ -1,11 +1,11 @@
 {
-    "name": "my_project",
+    "name": "test_sandbox",
     // Dev Container display name
-    "display_name": "Project for customer MyProject",
+    "display_name": "Project for IQGeo Sandbox Testing",
     // Prefix to use in container names and Docker compose
-    "prefix": "myproj",
+    "prefix": "sandbox",
     // The name of the database to use. (Should be different from "iqgeo" so myw_db can drop it - uses iqgeo user for connection)
-    "db_name": "myproj",
+    "db_name": "sandbox",
     "platform": {
         // The version of the IQGeo platform to use. Options are 7.0, and above
         "version": "7.4",
@@ -32,13 +32,27 @@
         // {boolean} [devOnly=false]: if true, the module is only included in the development environment. e.g. a dev database module
         // {string}  [devSrc]: (product modules only) relative path to the source code for the module in the development environment
         // {boolean} [dbInit]: (default true for product modules) if false, skips creating a schema initialisation step in the 600_init_db.sh script
-        {
+   {
             // remove this entry if the repository does not contain a 'custom` module
             "name": "custom"
         },
+        
         {
-            "name": "comms",
-            "version": "3.5"
+
+            "name":"construction_print",
+"version":"latest"
+        },
+        //{
+        //    "name":"comsof",
+        //   "version":"latest"
+        //}
+        {
+            "name":"workflow_manager",
+       "version":"4.2"
+        },
+        {
+            "name":"groups",
+"version":"latest"
         }
     ],
 
@@ -54,7 +68,7 @@
         "project_registry": "harbor.delivery.iqgeo.cloud",
         // Repository/namespace within the registry where project images are published.
         // Example: "myproject" -> harbor.delivery.iqgeo.cloud/myproject/iqgeo-<prefix>-appserver
-        "project_repository": "myproject"
+        "project_repository": "sandbox"
     },
 
     "version": "1.2.0"

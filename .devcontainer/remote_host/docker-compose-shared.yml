@@ -70,9 +70,9 @@ services:
 
 volumes:
     pgdata:
-        name: ${PROJ_PREFIX:-myproj}_pgdata
+        name: ${PROJ_PREFIX:-sandbox}_pgdata
     pgadmin-data:
-        name: ${PROJ_PREFIX:-myproj}_pgadmin_data
+        name: ${PROJ_PREFIX:-sandbox}_pgadmin_data
     # START CUSTOM SECTION
     # END CUSTOM SECTION
 

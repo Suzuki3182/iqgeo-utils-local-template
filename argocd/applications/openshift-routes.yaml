@@ -1,0 +1,48 @@
+# =============================================================================
+# Argo CD Application: OpenShift Routes
+# =============================================================================
+# Manages OpenShift Routes for all IQGeo services.
+# Separated from individual services to allow centralized route management.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openshift-routes-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: iqgeo
+    iqgeo/environment: dev
+    iqgeo/component: networking
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: iqgeo
+
+  source:
+    repoURL: "https://github.com/IQGeo/utils-project-template.git"
+    targetRevision: main
+    path: argocd/environments/dev/manifests/routes
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: suzuki3182-dev
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: false
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 3m
+
+  ignoreDifferences:
+    - group: route.openshift.io
+      kind: Route
+      jsonPointers:
+        - /status

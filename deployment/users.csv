@@ -1,0 +1,6 @@
+username,email,firstName,lastName,password,role
+iqgeo_admin,admin@iqgeo.local,IQGeo,Admin,IQGeo2026!,
+operator1,op1@iqgeo.local,Operator,One,IQGeo2026!,
+operator2,op2@iqgeo.local,Operator,Two,IQGeo2026!,
+viewer1,viewer1@iqgeo.local,Viewer,One,IQGeo2026!,
+engineer1,eng1@iqgeo.local,Field,Engineer,IQGeo2026!,

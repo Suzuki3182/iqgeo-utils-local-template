@@ -1,0 +1,111 @@
+# =============================================================================
+# Argo CD AppProject for IQGeo Platform
+# =============================================================================
+# Defines the boundaries for IQGeo deployments:
+# - Which Git repos can be used as sources
+# - Which clusters/namespaces can be targeted
+# - Which Kubernetes resource types can be managed
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: iqgeo
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: iqgeo
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: "IQGeo Platform deployment project"
+
+  # Source repositories allowed for this project
+  sourceRepos:
+    # This repository (GitOps config + raw manifests)
+    - "https://github.com/IQGeo/utils-project-template.git"
+    # IQGeo Helm chart OCI registry
+    - "oci://harbor.delivery.iqgeo.cloud/helm/*"
+    # Future: Artifactory OCI registry
+    # - "oci://artifactory.company.com/iqgeo-*/*"
+
+  # Destination clusters and namespaces
+  destinations:
+    # Dev environment
+    - server: "https://kubernetes.default.svc"
+      namespace: "suzuki3182-dev"
+    # QA environment (update namespace when available)
+    - server: "https://kubernetes.default.svc"
+      namespace: "iqgeo-qa"
+    # Prod environment (update namespace when available)
+    - server: "https://kubernetes.default.svc"
+      namespace: "iqgeo-prod"
+    # Argo CD namespace (for managing Applications themselves)
+    - server: "https://kubernetes.default.svc"
+      namespace: "argocd"
+
+  # Allowed Kubernetes resource types
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  namespaceResourceWhitelist:
+    # Core resources
+    - group: ""
+      kind: "*"
+    # Apps
+    - group: apps
+      kind: "*"
+    # Batch (CronJobs)
+    - group: batch
+      kind: "*"
+    # OpenShift Routes
+    - group: route.openshift.io
+      kind: Route
+    # RBAC
+    - group: rbac.authorization.k8s.io
+      kind: "*"
+    # Networking
+    - group: networking.k8s.io
+      kind: "*"
+    # Argo CD Applications (for App of Apps)
+    - group: argoproj.io
+      kind: "*"
+
+  # Orphaned resources monitoring
+  orphanedResources:
+    warn: true
+    ignore:
+      - group: ""
+        kind: "Event"
+
+  # Sync windows (optional - restrict prod syncs to maintenance windows)
+  # syncWindows:
+  #   - kind: allow
+  #     schedule: "0 2 * * 1-5"    # Mon-Fri 2:00 AM
+  #     duration: 2h
+  #     applications: ["iqgeo-platform-prod"]
+  #     namespaces: ["iqgeo-prod"]
+  #   - kind: deny
+  #     schedule: "0 0 * * *"      # All other times
+  #     duration: 24h
+  #     applications: ["iqgeo-platform-prod"]
+  #     namespaces: ["iqgeo-prod"]
+
+  # Roles (RBAC within the project)
+  roles:
+    - name: admin
+      description: "Full access to IQGeo project"
+      policies:
+        - p, proj:iqgeo:admin, applications, *, iqgeo/*, allow
+      groups:
+        - system:cluster-admins
+
+    - name: developer
+      description: "Read-only access, can sync dev"
+      policies:
+        - p, proj:iqgeo:developer, applications, get, iqgeo/*, allow
+        - p, proj:iqgeo:developer, applications, sync, iqgeo/*-dev, allow
+
+    - name: viewer
+      description: "Read-only access to all environments"
+      policies:
+        - p, proj:iqgeo:viewer, applications, get, iqgeo/*, allow

@@ -1,0 +1,85 @@
+# =============================================================================
+# Argo CD Application: IQGeo Platform (Helm Chart)
+# =============================================================================
+# Deploys the IQGeo Platform using the official Helm chart from Harbor OCI
+# registry, with environment-specific values from this Git repository.
+#
+# This Application uses multi-source to combine:
+#   1. Helm chart from OCI registry (iqgeo-platform-dev)
+#   2. Values file from this Git repo (environment-specific)
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: iqgeo-platform-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: iqgeo
+    iqgeo/environment: dev
+  annotations:
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: iqgeo
+
+  # Multi-source: Helm chart + Git values
+  sources:
+    # Source 1: IQGeo Platform Helm chart from OCI registry
+    - repoURL: "oci://harbor.delivery.iqgeo.cloud/helm"
+      chart: iqgeo-platform-dev
+      targetRevision: "3.1.0"
+      helm:
+        # Reference the values file from the Git source (by $ref)
+        valueFiles:
+          - $values/argocd/environments/dev/values-iqgeo-platform.yaml
+
+    # Source 2: This Git repository (provides values files)
+    - repoURL: "https://github.com/IQGeo/utils-project-template.git"
+      targetRevision: main
+      ref: values
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: suzuki3182-dev
+
+  # Sync policy
+  syncPolicy:
+    automated:
+      # Auto-sync when Git changes are detected
+      selfHeal: true
+      # Do NOT auto-prune (safety for dev)
+      prune: false
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore differences that OpenShift mutates
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/metadata/annotations
+    - group: route.openshift.io
+      kind: Route
+      jsonPointers:
+        - /spec/host
+        - /status
+    - group: ""
+      kind: ServiceAccount
+      jsonPointers:
+        - /imagePullSecrets
+        - /secrets
+    - group: ""
+      kind: PersistentVolumeClaim
+      jsonPointers:
+        - /spec/volumeName
+        - /spec/storageClassName

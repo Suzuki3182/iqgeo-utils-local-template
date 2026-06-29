@@ -19,7 +19,7 @@ fi
 
 # Set PROJ_PREFIX to default if not set
 if [ -z "$PROJ_PREFIX" ]; then
-    PROJ_PREFIX="myproj"
+    PROJ_PREFIX="sandbox"
     echo "Using default PROJ_PREFIX: $PROJ_PREFIX"
 fi
 
@@ -32,7 +32,7 @@ if [ -z "$PROJECT_REGISTRY" ]; then
     fi
 fi
 if [ -z "$PROJECT_REPOSITORY" ]; then
-    PROJECT_REPOSITORY="myproject"
+    PROJECT_REPOSITORY="sandbox"
 fi
 
 # Build arguments

@@ -1,0 +1,90 @@
+# =============================================================================
+# PROD Environment - IQGeo Platform Helm Values
+# =============================================================================
+# Production-specific overrides. Higher replicas, stricter resources.
+# Update namespace, hostnames, and image tags for production.
+# =============================================================================
+
+global:
+  dnsZone: apps.rm2.thpm.p1.openshiftapps.com
+  hostname: iqgeo-platform-iqgeo-prod
+  imagePrefix: sandbox
+  db:
+    host: postgis
+    port: 5432
+    name: iqgeo
+    auth:
+      existingSecret: db-credentials
+      usernameKey: username
+      passwordKey: password
+    ssl:
+      enabled: true
+
+image:
+  projectRegistry: image-registry.openshift-image-registry.svc:5000
+  projectRepository: iqgeo-prod
+  # Prod uses a pinned, tested release tag
+  tag: "7.5.0"
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: false
+
+persistence:
+  enabled: true
+  storageClass: "gp3"
+  accessMode: ReadWriteOnce
+  size: 50Gi
+
+appserver:
+  enabled: true
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  resources:
+    limits:
+      cpu: "4"
+      memory: 8Gi
+    requests:
+      cpu: "2"
+      memory: 4Gi
+
+worker:
+  enabled: true
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: "4"
+      memory: 8Gi
+    requests:
+      cpu: "1"
+      memory: 2Gi
+
+redis:
+  enabled: true
+  master:
+    persistence:
+      storageClass: "gp3"
+      size: 32Gi
+
+cronjob:
+  enabled: true
+
+podSecurityContext:
+  runAsNonRoot: true
+
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 80

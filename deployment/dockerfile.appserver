@@ -1,8 +1,8 @@
 ARG PRODUCT_REGISTRY=harbor.delivery.iqgeo.cloud
 ARG PRODUCT_REPOSITORY_PREFIX=releases_
 ARG PROJECT_REGISTRY=harbor.delivery.iqgeo.cloud
-ARG PROJECT_REPOSITORY=myproject
-ARG BUILD_IMAGE=${PROJECT_REGISTRY}/${PROJECT_REPOSITORY}/iqgeo-myproj-build
+ARG PROJECT_REPOSITORY=sandbox
+ARG BUILD_IMAGE=${PROJECT_REGISTRY}/${PROJECT_REPOSITORY}/iqgeo-sandbox-build
 
 FROM ${BUILD_IMAGE} AS iqgeo_builder
 
@@ -31,7 +31,9 @@ COPY --chown=www-data:www-data --from=iqgeo_builder /opt/iqgeo/platform/External
 
 # START SECTION Copy modules  - if you edit these lines manually note that your change will get lost if you run the IQGeo Project Update tool
 COPY --chown=www-data:www-data --from=iqgeo_builder ${MODULES}/custom/ ${MODULES}/custom/
-COPY --chown=www-data:www-data --from=iqgeo_builder ${MODULES}/comms/ ${MODULES}/comms/
+COPY --chown=www-data:www-data --from=iqgeo_builder ${MODULES}/construction_print/ ${MODULES}/construction_print/
+COPY --chown=www-data:www-data --from=iqgeo_builder ${MODULES}/workflow_manager/ ${MODULES}/workflow_manager/
+COPY --chown=www-data:www-data --from=iqgeo_builder ${MODULES}/groups/ ${MODULES}/groups/
 # END SECTION
 
 # START CUSTOM SECTION

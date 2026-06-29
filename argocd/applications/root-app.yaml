@@ -1,0 +1,51 @@
+# =============================================================================
+# Argo CD Root Application (App of Apps Pattern)
+# =============================================================================
+# This is the ONLY Application you need to apply manually.
+# It bootstraps all other Applications by watching the argocd/applications/
+# directory in this Git repository.
+#
+# Usage:
+#   oc apply -f argocd/applications/root-app.yaml
+#
+# This will create:
+#   - iqgeo-platform-dev (Helm chart)
+#   - postgis-dev (raw manifests)
+#   - keycloak-dev (raw manifests)
+#   - pgadmin-dev (raw manifests)
+#   - openshift-routes-dev (raw manifests)
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: iqgeo-root
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: iqgeo
+    iqgeo/component: bootstrap
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: iqgeo
+
+  source:
+    repoURL: "https://github.com/IQGeo/utils-project-template.git"
+    targetRevision: main
+    path: argocd/applications
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: false
+    syncOptions:
+      - CreateNamespace=false
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 3m

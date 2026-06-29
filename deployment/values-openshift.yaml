@@ -1,0 +1,284 @@
+# OpenShift-specific values overlay for IQGeo Platform 7.5
+# Target namespace: suzuki3182-dev
+# OpenShift cluster: api.rm2.thpm.p1.openshiftapps.com
+# UID range: 1013860000/10000
+# Storage: gp3 (EBS CSI, WaitForFirstConsumer)
+# Resource quotas: 30Gi RAM / 30 CPU (deploy), 14Gi RAM / 20 CPU (build)
+
+global:
+  dnsZone: apps.rm2.thpm.p1.openshiftapps.com
+  hostname: iqgeo-platform
+  imagePrefix: sandbox
+  db:
+    host: postgis
+    port: 5432
+    name: iqgeo
+    auth:
+      existingSecret: db-credentials
+      usernameKey: username
+      passwordKey: password
+    ssl:
+      enabled: false
+  redisClient:
+    host: ""
+    port: 6379
+    auth:
+      enabled: true
+      secretName: ""
+      secretPasswordKey: ""
+    handleOlderPlatformVersions: false
+
+image:
+  projectRegistry: harbor.delivery.iqgeo.cloud
+  projectRepository: releases_platform
+  tag: "latest"
+  pullPolicy: Always
+  pullSecrets:
+    - name: container-registry
+  appserver:
+    repository: "harbor.delivery.iqgeo.cloud/releases_platform/platform-appserver"
+  tools:
+    repository: "harbor.delivery.iqgeo.cloud/releases_platform/platform-tools"
+
+# Disable nginx Ingress — use OpenShift Route instead
+ingress:
+  enabled: false
+
+# Shared PVC — use gp3 (RWO) since EFS is not available; single replica
+persistence:
+  enabled: true
+  storageClass: "gp3"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+
+appserver:
+  enabled: true
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+  apachePort: "8080"
+  sharedDirectory: "/shared-data"
+  debug: false
+  oidc:
+    enabled: true
+    insecure: true
+    clientId: "iqgeo-oidc"
+    clientSecret:
+      secretName: "oidc-client-secret"
+      secretKey: "oidc-client-secret"
+    services: ["discovery","authorization","access_token","user_info","end_session","refresh_access_token"]
+    responseTypes: ["code"]
+    scopes: ["openid", "profile", "roles"]
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  # OpenShift: run as non-root with the namespace-assigned UID
+  podSecurityContext:
+    runAsNonRoot: true
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+  # initContainer to pre-chmod entrypoint scripts so OpenShift UID can execute them
+  extraInitContainers:
+    - name: fix-entrypoint-permissions
+      image: harbor.delivery.iqgeo.cloud/releases_platform/platform-appserver:latest
+      command: ["sh", "-c", "chmod -R a+rx /entrypoint.d /entrypoint.d.sh 2>/dev/null || true"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
+      volumeMounts:
+        - name: entrypoint-scripts
+          mountPath: /entrypoint.d
+  extraVolumes:
+    - name: entrypoint-scripts
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: entrypoint-scripts
+      mountPath: /entrypoint.d
+
+workerGroups:
+  - name: default-worker
+    taskWorkers: 2
+    taskQueues: []
+    terminationGracePeriodSeconds: 300
+    resources:
+      limits:
+        cpu: "1"
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+    podSecurityContext:
+      runAsNonRoot: true
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+
+  - name: replication-worker
+    taskQueues: ['platform_extracts']
+    replicaCount: 1
+    taskWorkers: 1
+    taskTimeout: 18000
+    resources:
+      limits:
+        cpu: "2"
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    autoscaling:
+      enabled: false
+    podSecurityContext:
+      runAsNonRoot: true
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+
+# Internal Redis
+redis:
+  enabled: true
+  master:
+    count: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+    persistence:
+      storageClass: "gp3"
+      size: 8Gi
+    podSecurityContext:
+      enabled: false
+    containerSecurityContext:
+      enabled: false
+
+# Internal PostGIS (test/dev only)
+postgis:
+  enabled: true
+  image:
+    registry: harbor.delivery.iqgeo.cloud
+    repository: sandbox/iqgeo-sandbox-tools
+    tag: "latest"
+    pullSecrets:
+      - name: container-registry
+  persistence:
+    storageClass: "gp3"
+    size: 5Gi
+  auth:
+    existingSecret: db-credentials
+    secretKeys:
+      adminPasswordKey: password
+      userPasswordKey: password
+  primary:
+    podSecurityContext:
+      enabled: false
+    containerSecurityContext:
+      enabled: false
+    resources:
+      limits:
+        cpu: "1"
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+
+# Internal Keycloak (test/dev only)
+keycloak:
+  enabled: true
+  auth:
+    adminUser: admin
+    adminPassword: admin
+  service:
+    type: ClusterIP
+    port: 8080
+  podSecurityContext:
+    enabled: false
+  containerSecurityContext:
+    enabled: false
+  resources:
+    limits:
+      cpu: "1"
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+# CronJobs — keep enabled but with OpenShift-safe resources
+cronjob:
+  enabled: true
+  resources:
+    limits:
+      cpu: "1"
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+cronjobs:
+  maintain:
+    schedule: "30 03 * * *"
+    commandRef: maintain
+    deadlineSeconds: 4800
+    startingDeadlineSeconds: 300
+    backoffLimit: 3
+    maintains: "transaction_logs usage_stats replicas statistics"
+    includeSharedData: false
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+  dbVacuum:
+    schedule: "30 05 * * 6"
+    commandRef: dbVacuum
+    deadlineSeconds: 4800
+    startingDeadlineSeconds: 300
+    backoffLimit: 3
+    includeSharedData: false
+    resources:
+      limits:
+        cpu: "1"
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+  replicationExport:
+    enabled: false
+
+  replicationExportWithCode:
+    enabled: false
+
+  realignExtracts:
+    enabled: false

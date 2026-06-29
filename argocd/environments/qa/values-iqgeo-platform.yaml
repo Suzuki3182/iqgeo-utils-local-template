@@ -1,0 +1,87 @@
+# =============================================================================
+# QA Environment - IQGeo Platform Helm Values
+# =============================================================================
+# QA-specific overrides. Inherits structure from dev values.
+# Update namespace, hostnames, and image tags for QA.
+# =============================================================================
+
+global:
+  dnsZone: apps.rm2.thpm.p1.openshiftapps.com
+  hostname: iqgeo-platform-iqgeo-qa
+  imagePrefix: sandbox
+  db:
+    host: postgis
+    port: 5432
+    name: iqgeo
+    auth:
+      existingSecret: db-credentials
+      usernameKey: username
+      passwordKey: password
+    ssl:
+      enabled: false
+
+image:
+  projectRegistry: image-registry.openshift-image-registry.svc:5000
+  projectRepository: iqgeo-qa
+  # QA uses a specific tested tag, not latest
+  tag: "7.5-with-deps"
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: false
+
+persistence:
+  enabled: true
+  storageClass: "gp3"
+  accessMode: ReadWriteOnce
+  size: 20Gi
+
+appserver:
+  enabled: true
+  replicaCount: 2
+  autoscaling:
+    enabled: false
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: "1"
+      memory: 2Gi
+
+worker:
+  enabled: true
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+redis:
+  enabled: true
+  master:
+    persistence:
+      storageClass: "gp3"
+      size: 16Gi
+
+cronjob:
+  enabled: true
+
+podSecurityContext:
+  runAsNonRoot: true
+
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 80

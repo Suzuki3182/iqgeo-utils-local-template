@@ -13,7 +13,7 @@ source "$SCRIPT_DIR/../.env"
 
 # Set PROJ_PREFIX to default if not set
 if [ -z "$PROJ_PREFIX" ]; then
-    PROJ_PREFIX="myproj"
+    PROJ_PREFIX="sandbox"
     echo "Using default PROJ_PREFIX: $PROJ_PREFIX"
 fi
 

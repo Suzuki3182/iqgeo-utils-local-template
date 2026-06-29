@@ -1,0 +1,13 @@
+# =============================================================================
+# Argo CD Namespace for OpenShift
+# =============================================================================
+# Creates the 'argocd' namespace where Argo CD components will be installed.
+# On OpenShift Developer Sandbox, this may need to be your assigned namespace
+# (e.g., suzuki3182-dev) since you can't create new namespaces.
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd

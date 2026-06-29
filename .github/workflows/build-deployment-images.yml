@@ -31,7 +31,7 @@ env:
   PRODUCT_REGISTRY: harbor.delivery.iqgeo.cloud
   PRODUCT_REPOSITORY_PREFIX: releases_
   PROJECT_REGISTRY: harbor.delivery.iqgeo.cloud
-  PROJECT_REPOSITORY: myproject
+  PROJECT_REPOSITORY: sandbox
   DOCKER_BUILD_SUMMARY: true
   DOCKER_BUILD_RECORD_UPLOAD: true
   BUILD_NUMBER: ${{ github.run_number }}
@@ -92,7 +92,7 @@ jobs:
         include: ${{ fromJson(needs.extract-version.outputs.platforms) }}
     runs-on: ${{ matrix.runner }}
     env:
-      image_name: harbor.delivery.iqgeo.cloud/myproject/iqgeo-myproj-build
+      image_name: harbor.delivery.iqgeo.cloud/sandbox/iqgeo-sandbox-build
     outputs:
       image_uri: ${{ steps.output.outputs.image_uri }}
     steps:
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.extract-version.outputs.should_push == 'true'
     env:
-      image_name: harbor.delivery.iqgeo.cloud/myproject/iqgeo-myproj-build
+      image_name: harbor.delivery.iqgeo.cloud/sandbox/iqgeo-sandbox-build
     outputs:
       digest: ${{ steps.merge.outputs.digest }}
       image_uri: ${{ steps.output.outputs.image_uri }}
@@ -226,7 +226,7 @@ jobs:
         include: ${{ fromJson(needs.extract-version.outputs.platforms) }}
     runs-on: ${{ matrix.runner }}
     env:
-      image_name: harbor.delivery.iqgeo.cloud/myproject/iqgeo-myproj-appserver
+      image_name: harbor.delivery.iqgeo.cloud/sandbox/iqgeo-sandbox-appserver
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -297,7 +297,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.extract-version.outputs.should_push == 'true'
     env:
-      image_name: harbor.delivery.iqgeo.cloud/myproject/iqgeo-myproj-appserver
+      image_name: harbor.delivery.iqgeo.cloud/sandbox/iqgeo-sandbox-appserver
     outputs:
       digest: ${{ steps.merge.outputs.digest }}
       image_uri: ${{ steps.output.outputs.image_uri }}
@@ -355,7 +355,7 @@ jobs:
         include: ${{ fromJson(needs.extract-version.outputs.platforms) }}
     runs-on: ${{ matrix.runner }}
     env:
-      image_name: harbor.delivery.iqgeo.cloud/myproject/iqgeo-myproj-tools
+      image_name: harbor.delivery.iqgeo.cloud/sandbox/iqgeo-sandbox-tools
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -428,7 +428,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.extract-version.outputs.should_push == 'true'
     env:
-      image_name: harbor.delivery.iqgeo.cloud/myproject/iqgeo-myproj-tools
+      image_name: harbor.delivery.iqgeo.cloud/sandbox/iqgeo-sandbox-tools
     outputs:
       digest: ${{ steps.merge.outputs.digest }}
       image_uri: ${{ steps.output.outputs.image_uri }}

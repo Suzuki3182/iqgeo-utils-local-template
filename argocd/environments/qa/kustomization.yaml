@@ -1,0 +1,19 @@
+# =============================================================================
+# QA Environment Kustomization
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: iqgeo-qa
+
+commonLabels:
+  iqgeo/environment: qa
+  app.kubernetes.io/managed-by: argocd
+
+# QA reuses dev manifests with namespace override
+# Add QA-specific patches as needed
+resources: []
+# When QA manifests are ready, add them here:
+# - manifests/postgis/postgis-deployment.yaml
+# - manifests/keycloak/keycloak-deployment.yaml
+# - manifests/routes/openshift-routes.yaml

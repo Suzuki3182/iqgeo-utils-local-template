@@ -1,0 +1,17 @@
+# =============================================================================
+# Prod Environment Kustomization
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: iqgeo-prod
+
+commonLabels:
+  iqgeo/environment: prod
+  app.kubernetes.io/managed-by: argocd
+
+# Prod manifests - add when ready
+resources: []
+# - manifests/postgis/postgis-deployment.yaml
+# - manifests/keycloak/keycloak-deployment.yaml
+# - manifests/routes/openshift-routes.yaml
