@@ -11,7 +11,7 @@ FROM ${PRODUCT_REGISTRY}/${PRODUCT_REPOSITORY_PREFIX}platform/groups:latest AS g
 FROM ${PRODUCT_REGISTRY}/${PRODUCT_REPOSITORY_PREFIX}platform/platform-build:7.4
 
 # START SECTION Copy the modules - if you edit these lines manually note that your change will get lost if you run the IQGeo Project Update tool
-COPY --link custom ${MODULES}/custom
+COPY custom ${MODULES}/custom
 COPY --from=construction_print / ${MODULES}/
 COPY --from=workflow_manager / ${MODULES}/
 COPY --from=groups / ${MODULES}/

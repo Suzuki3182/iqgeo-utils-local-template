@@ -50,4 +50,11 @@ USER www-data
 # add additional entrypoint scripts (build db, ...)
 COPY --chown=www-data:www-data entrypoint.d/* /entrypoint.d/
 
+# Normalize line endings (defensive against CRLF from Windows editors) and ensure executable
+USER root
+RUN sed -i 's/\r$//' /entrypoint.d/* 2>/dev/null || true \
+    && chmod -R a+rx /entrypoint.d/* 2>/dev/null || true
+USER www-data
+
+
 COPY --chown=www-data:www-data appserver_config/ /opt/iqgeo/config/

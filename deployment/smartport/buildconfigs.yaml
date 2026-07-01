@@ -1,0 +1,123 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: iqgeo-qa-build
+  namespace: smartport
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: iqgeo-qa-appserver
+  namespace: smartport
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: iqgeo-qa-tools
+  namespace: smartport
+spec:
+  lookupPolicy:
+    local: true
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: iqgeo-qa-build
+  namespace: smartport
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deployment/dockerfile.build
+      pullSecret:
+        name: container-registry
+      buildArgs:
+        - name: PRODUCT_REGISTRY
+          value: harbor.delivery.iqgeo.cloud
+        - name: PRODUCT_REPOSITORY_PREFIX
+          value: releases_
+  output:
+    to:
+      kind: ImageStreamTag
+      name: iqgeo-qa-build:latest
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: "500m"
+      memory: 1Gi
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: iqgeo-qa-appserver
+  namespace: smartport
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: dockerfile.appserver
+      pullSecret:
+        name: combined-registry
+      buildArgs:
+        - name: PRODUCT_REGISTRY
+          value: harbor.delivery.iqgeo.cloud
+        - name: PRODUCT_REPOSITORY_PREFIX
+          value: releases_
+        - name: BUILD_IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/smartport/iqgeo-qa-build:latest
+  output:
+    to:
+      kind: ImageStreamTag
+      name: iqgeo-qa-appserver:latest
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: "500m"
+      memory: 1Gi
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: iqgeo-qa-tools
+  namespace: smartport
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: dockerfile.tools
+      pullSecret:
+        name: combined-registry
+      buildArgs:
+        - name: PRODUCT_REGISTRY
+          value: harbor.delivery.iqgeo.cloud
+        - name: PRODUCT_REPOSITORY_PREFIX
+          value: releases_
+        - name: BUILD_IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/smartport/iqgeo-qa-build:latest
+  output:
+    to:
+      kind: ImageStreamTag
+      name: iqgeo-qa-tools:latest
+  resources:
+    limits:
+      cpu: "2"
+      memory: 4Gi
+    requests:
+      cpu: "500m"
+      memory: 1Gi

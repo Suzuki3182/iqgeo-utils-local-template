@@ -1,6 +1,29 @@
 # Changelog
 
+#### Unreleased
+
+- Agentic deployment: added 4 new agent personas (Image Build & Registry Engineer, Identity & Access Specialist, Database & Schema Specialist, Secrets & OpenBao Specialist) to `agents.md`
+- Agentic deployment: added 4 new skill sets (Image Build & Registry, Keycloak/OIDC, myw_db schema ops, Secrets & OpenBao) to `skills.md`
+- Agentic deployment: added execution-loop phases for image build (Phase 0), secrets bootstrap (Phase 0.5), identity configuration (Phase 6.5) and DB schema init/migration (Phase 6.6); expanded completion criteria in `execution_loop.md`
+- Deployment fix: normalized `deployment/entrypoint.d/*.sh` to LF line endings (CRLF broke the `#!/bin/bash` shebang inside the Linux container, crashing the appserver on `270_adjust_oidc_conf.sh`)
+- Deployment hardening: `dockerfile.appserver` now strips CR (`sed -i 's/\r$//'`) and re-applies exec bits on entrypoint scripts as a defensive measure against Windows CRLF
+- Added `.gitattributes` enforcing `eol=lf` for `*.sh`, `entrypoint.d/*`, `*.bash` and Dockerfiles so scripts stay LF on Windows checkouts
+- OpenShift fix: appserver group now mounts emptyDir volumes at `/var/log/apache2` and `/var/run/apache2` so Apache can start under the random non-root UID (was CrashLooping with "Permission denied: could not open transfer log file")
+- OpenShift fix: added `combined-registry` to `image.pullSecrets` in `values-smartport.yaml` so pods can pull the internal-registry appserver/tools images (the chart-level pull secret list overrides SA-linked secrets)
+- Deployment verification: full smartport stack (appserver 1/1, redis, postgis, keycloak, pgadmin) confirmed Running; internal `/livez` and `/healthz` return 200; edge Route `iqgeo-platform` created
+- OpenShift fix (worker): pinned `workerGroups[default-worker].securityContext.runAsUser` to `1002990000` — the chart defaulted the worker to `runAsUser: 33` (www-data), which the namespace `restricted-v2` SCC rejected (valid range 1002990000–1002999999), leaving `default-worker` at 0/1 (FailedCreate)
+- OpenShift fix (worker): added podAffinity co-locating the worker with the appserver (`app=iqgeo-platform-dev`) so the RWO `shared-data` PVC (ontap-nas-ssd) can attach to both pods on the same node (was Multi-Attach error)
+- Deployment fix (worker): worker init container now strips `231-oidc-config.sh` and `270_adjust_oidc_conf.sh` (workers have no OIDC conf.json → crash) and rewrites `910_start_worker.sh` to `exec myw_task start` in the FOREGROUND (stock script backgrounds it, so the dedicated worker container exited 0 and CrashLooped)
+- Deployment verification (worker): `default-worker` now 1/1 Running, 0 restarts; 2 RQ workers listening on `platform_db_load`, `platform_extracts`, `default` queues with scheduler active
+- Deployment verification (credentials): platform login `admin` / `_mywWorld_` confirmed present in both the Keycloak `iqgeo` realm and the `myw.user` table; Keycloak admin console is `admin` / `admin`
+- OpenShift fix (ingress): added `deployment/smartport/networkpolicy-allow-router.yaml` (`allow-from-openshift-router`) — every Route returned HTTP 503 "Application is not available" while pods were 1/1 Running and reachable in-cluster (pod→service: appserver 301, keycloak 200). Root cause: the namespace's default-deny NetworkPolicy set only admitted namespace-scoped ingress, but this cluster's OpenShift router runs on the node **host network**, so its traffic carries no pod/namespace identity a `namespaceSelector` can match. Proven empirically — a namespaceSelector rule (openshift-ingress / both policy-group label conventions) left routes timing out, while an any-source rule immediately served them. Final policy admits ingress from any source (`ipBlock 0.0.0.0/0` + `::/0`), safe because these are router-only HTTP/Keycloak frontends. Verified through the router: iqgeo 301, keycloak 200, pgadmin 302.
+
+
+
+
+
 #### v1.2.0 (05/28/2026)
+
 
 - DX-44: deployment: add Kubernetes overlay for standalone OpenBao
 - DX-40: docker-compose: added OpenBao and Centrifugo services, disabled by default

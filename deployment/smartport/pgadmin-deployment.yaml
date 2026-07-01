@@ -1,0 +1,214 @@
+# =============================================================================
+# pgAdmin 4 Deployment for OpenShift (smartport namespace)
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgadmin-server-config
+  namespace: smartport
+  labels:
+    app: pgadmin
+data:
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "IQGeo PostGIS",
+          "Group": "IQGeo",
+          "Host": "postgis",
+          "Port": 5432,
+          "MaintenanceDB": "qa",
+          "Username": "iqgeo",
+          "SSLMode": "prefer",
+          "PassFile": "/tmp/pgpassfile"
+        }
+      }
+    }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgadmin-credentials
+  namespace: smartport
+  labels:
+    app: pgadmin
+type: Opaque
+stringData:
+  PGADMIN_DEFAULT_EMAIL: "admin@iqgeo.com"
+  PGADMIN_DEFAULT_PASSWORD: "IQGeo2026!"
+  pgpassfile: "postgis:5432:*:iqgeo:IqGeo_Sm4rtport_2026"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: smartport
+  labels:
+    app: pgadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      initContainers:
+        - name: fix-permissions
+          image: docker.io/dpage/pgadmin4:8.14
+          command:
+            - sh
+            - -c
+            - |
+              set +e
+              mkdir -p /mnt/pgadmin/sessions /mnt/pgadmin/storage /mnt/pgadmin/azurecredentialcache
+              cp /mnt/secrets/pgpassfile /mnt/pgadmin/pgpassfile
+              chmod 600 /mnt/pgadmin/pgpassfile
+              cp /venv/bin/python3 /mnt/venv-bin/python3
+              chmod a+rx /mnt/venv-bin/python3
+              cp /venv/bin/gunicorn /mnt/venv-bin/gunicorn
+              chmod a+rx /mnt/venv-bin/gunicorn
+              echo "Init completed"
+              exit 0
+          volumeMounts:
+            - name: pgadmin-data
+              mountPath: /mnt/pgadmin
+            - name: pgadmin-secrets
+              mountPath: /mnt/secrets
+            - name: venv-bin
+              mountPath: /mnt/venv-bin
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+      containers:
+        - name: pgadmin
+          image: docker.io/dpage/pgadmin4:8.14
+          ports:
+            - containerPort: 5050
+              protocol: TCP
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-credentials
+                  key: PGADMIN_DEFAULT_EMAIL
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-credentials
+                  key: PGADMIN_DEFAULT_PASSWORD
+            - name: PGADMIN_LISTEN_PORT
+              value: "5050"
+            - name: PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION
+              value: "False"
+            - name: PGADMIN_CONFIG_WTF_CSRF_ENABLED
+              value: "False"
+            - name: PGADMIN_SERVER_JSON_FILE
+              value: "/pgadmin4/servers.json"
+            - name: SCRIPT_NAME
+              value: ""
+          volumeMounts:
+            - name: pgadmin-data
+              mountPath: /var/lib/pgadmin
+            - name: server-config
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+              readOnly: true
+            - name: venv-bin
+              mountPath: /venv/bin/python3
+              subPath: python3
+            - name: venv-bin
+              mountPath: /venv/bin/gunicorn
+              subPath: gunicorn
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /misc/ping
+              port: 5050
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /misc/ping
+              port: 5050
+            initialDelaySeconds: 60
+            periodSeconds: 10
+      volumes:
+        - name: pgadmin-data
+          emptyDir: {}
+        - name: venv-bin
+          emptyDir: {}
+        - name: server-config
+          configMap:
+            name: pgadmin-server-config
+        - name: pgadmin-secrets
+          secret:
+            secretName: pgadmin-credentials
+            items:
+              - key: pgpassfile
+                path: pgpassfile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin
+  namespace: smartport
+  labels:
+    app: pgadmin
+spec:
+  selector:
+    app: pgadmin
+  ports:
+    - port: 5050
+      targetPort: 5050
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: pgadmin
+  namespace: smartport
+  labels:
+    app: pgadmin
+spec:
+  to:
+    kind: Service
+    name: pgadmin
+    weight: 100
+  port:
+    targetPort: 5050
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

@@ -24,7 +24,8 @@ image:
   projectRegistry: image-registry.openshift-image-registry.svc:5000
   projectRepository: iqgeo-qa
   # QA uses a specific tested tag, not latest
-  tag: "7.5-with-deps"
+  tag: "7.4-with-deps"
+
   pullPolicy: IfNotPresent
 
 ingress:

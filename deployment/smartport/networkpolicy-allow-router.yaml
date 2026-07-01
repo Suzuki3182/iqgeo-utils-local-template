@@ -1,0 +1,38 @@
+# =============================================================================
+# Allow ingress from the OpenShift router to the smartport workloads.
+#
+# Symptom: every Route returned HTTP 503 "Application is not available" even
+# though the pods were 1/1 Running and reachable in-cluster (appserver 301,
+# keycloak 200 when curled pod->service).
+#
+# Root cause: the namespace ships with a portal-managed
+# "allow-from-openshift-ingress" NetworkPolicy that only admits traffic from
+# namespaces carrying a specific policy-group label. On this cluster the
+# OpenShift router runs on the node HOST NETWORK, so its traffic to the backend
+# pods does NOT carry a pod/namespace identity that a namespaceSelector or
+# podSelector can match -- proven empirically: a namespaceSelector rule
+# (openshift-ingress / policy-group labels) left the routes timing out, while a
+# blanket ingress rule immediately made them serve (keycloak 200, appserver
+# 301) through the router.
+#
+# Fix: admit ingress from any source (ipBlock 0.0.0.0/0 and ::/0). This is safe
+# here because these workloads are HTTP/Keycloak frontends that are only
+# reachable through the cluster router / perimeter; there is no direct pod
+# exposure outside the cluster. podSelector {} applies it to all pods in the
+# namespace.
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-openshift-router
+  namespace: smartport
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+        - ipBlock:
+            cidr: ::/0

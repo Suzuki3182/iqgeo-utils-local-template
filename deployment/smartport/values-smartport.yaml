@@ -1,20 +1,19 @@
-# OpenShift-specific values overlay for IQGeo Platform 7.4
-# Using Helm chart v3.1.0 (no postgis/keycloak subcharts - deployed separately)
-# Target namespace: suzuki3182-dev
-# OpenShift cluster: api.rm2.thpm.p1.openshiftapps.com
-# UID range: 1013860000/10000
-# Storage: gp3 (EBS CSI, WaitForFirstConsumer)
-# Image: 7.4-with-deps (includes all Python deps, OpenShift-compatible perms)
-
+# =============================================================================
+# IQGeo Platform 7.4 - smartport values overlay (Helm chart v3.1.0)
+# Cluster: api.53.caas.toroon12.stratus.int.bell.ca
+# Namespace: smartport | UID range 1002990000 | Storage: ontap-nas-ssd
+# Images: built on-cluster, pushed to internal registry (smartport/iqgeo-qa-*)
+# PostGIS + Keycloak deployed separately (standalone manifests)
+# =============================================================================
 
 global:
-  dnsZone: apps.rm2.thpm.p1.openshiftapps.com
-  hostname: iqgeo-platform-suzuki3182-dev
-  imagePrefix: sandbox
+  dnsZone: apps.53.caas.toroon12.stratus.int.bell.ca
+  hostname: iqgeo-platform-smartport
+  imagePrefix: iqgeo-qa
   db:
     host: postgis
     port: 5432
-    name: iqgeo
+    name: qa
     auth:
       existingSecret: db-credentials
       usernameKey: username
@@ -32,28 +31,25 @@ global:
 
 image:
   projectRegistry: image-registry.openshift-image-registry.svc:5000
-  projectRepository: suzuki3182-dev
-  tag: "7.4-with-deps"
+  projectRepository: smartport
+  tag: "latest"
   pullPolicy: Always
-
   pullSecrets:
     - name: container-registry
-    - name: iqgeo-platform-dockercfg-n7sq7
+    - name: combined-registry
   appserver:
-    repository: "image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver"
+    repository: "image-registry.openshift-image-registry.svc:5000/smartport/iqgeo-qa-appserver"
+    tag: "latest"
   tools:
-    repository: "image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver"
-    tag: "7.4-with-deps"
-
-# Disable nginx Ingress — use OpenShift Route instead
+    repository: "image-registry.openshift-image-registry.svc:5000/smartport/iqgeo-qa-tools"
+    tag: "latest"
 
 ingress:
   enabled: false
 
-# Shared PVC — use gp3 (RWO) since EFS is not available; single replica
 persistence:
   enabled: true
-  storageClass: "gp3"
+  storageClass: "ontap-nas-ssd"
   accessMode: ReadWriteOnce
   size: 10Gi
 
@@ -75,7 +71,7 @@ appserver:
     services: ["discovery","authorization","access_token","user_info","end_session","refresh_access_token"]
     responseTypes: ["code"]
     scopes: ["openid", "profile", "roles"]
-    issuer: "https://keycloak-suzuki3182-dev.apps.rm2.thpm.p1.openshiftapps.com/realms/iqgeo"
+    issuer: "https://keycloak-smartport.apps.53.caas.toroon12.stratus.int.bell.ca/realms/iqgeo"
   resources:
     limits:
       cpu: "2"
@@ -84,36 +80,23 @@ appserver:
       cpu: 500m
       memory: 1Gi
 
-# The 7.4-with-deps image has:
-
-# - All Python deps (geojson, geoalchemy2, etc.)
-# - Files owned www-data:root with 664 permissions (OpenShift group-writable pattern)
-# - No need for complex initContainers to fix permissions
-# Only need emptyDir overlays for dirs where entrypoint creates temp files
 appserverGroups:
   - name: default-appserver
     extraPodSpec: |
       initContainers:
         - name: fix-permissions
-          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.4-with-deps
+          image: image-registry.openshift-image-registry.svc:5000/smartport/iqgeo-qa-appserver:latest
           command:
             - sh
             - -c
             - |
               set +e
-              # Copy entrypoint scripts and make executable
-
               cp -a /entrypoint.d/* /mnt/entrypoint.d/
               chmod -R a+rwx /mnt/entrypoint.d/
-              # Copy apache config and make writable
               cp -a /etc/apache2/sites-enabled/* /mnt/apache-sites/
-              # Copy data dir and make writable
               cp -a /opt/iqgeo/data/* /mnt/data/
-              # Prepare config dir for OIDC
               mkdir -p /mnt/config/oidc
-              # Copy entire WebApps to writable volume (sed needs to create temp files here)
               cp -a /opt/iqgeo/platform/WebApps/* /mnt/webapps/
-              # Strip file capabilities from apache2 binary (restricted SCC + no_new_privs blocks cap binaries)
               cp /usr/sbin/apache2 /mnt/apache-bin/apache2
               chmod a+rx /mnt/apache-bin/apache2
               echo "Init container completed successfully"
@@ -151,6 +134,10 @@ appserverGroups:
         emptyDir: {}
       - name: apache-bin
         emptyDir: {}
+      - name: apache-logs
+        emptyDir: {}
+      - name: apache-run
+        emptyDir: {}
     extraVolumeMounts:
       - name: entrypoint-scripts
         mountPath: /entrypoint.d
@@ -165,6 +152,10 @@ appserverGroups:
       - name: apache-bin
         mountPath: /usr/sbin/apache2
         subPath: apache2
+      - name: apache-logs
+        mountPath: /var/log/apache2
+      - name: apache-run
+        mountPath: /var/run/apache2
 
 workerGroups:
   - name: default-worker
@@ -172,6 +163,12 @@ workerGroups:
     taskQueues: []
     terminationGracePeriodSeconds: 300
     securityContext:
+      # Pin to a UID inside the smartport namespace SCC range
+      # (openshift.io/sa.scc.uid-range = 1002990000/10000). The chart's worker
+      # template otherwise defaults to runAsUser: 33 (www-data), which the
+      # restricted-v2 SCC rejects. The appserver group omits runAsUser and lets
+      # OpenShift auto-assign; workers need it explicit to override the default.
+      runAsUser: 1002990000
       runAsNonRoot: true
       readOnlyRootFilesystem: false
       allowPrivilegeEscalation: false
@@ -183,16 +180,39 @@ workerGroups:
     extraPodSpec: |
       initContainers:
         - name: fix-permissions
-          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.4-with-deps
-
+          image: image-registry.openshift-image-registry.svc:5000/smartport/iqgeo-qa-appserver:latest
           command:
             - sh
             - -c
             - |
               set +e
               cp -a /entrypoint.d/* /mnt/entrypoint.d/ 2>/dev/null
+
+              # Workers run background tasks, not the OIDC-protected web UI.
+              # Strip the OIDC entrypoint scripts so the worker doesn't crash
+              # trying to read /opt/iqgeo/config/oidc/conf.json (only the
+              # appserver provisions that file).
               rm -f /mnt/entrypoint.d/231-oidc-config.sh 2>/dev/null
+              rm -f /mnt/entrypoint.d/270_adjust_oidc_conf.sh 2>/dev/null
+
+              # The stock 910_start_worker.sh backgrounds "myw_task start &" and
+              # returns, so on a dedicated worker container the entrypoint loop
+              # finishes and the container exits 0 (killing the worker). Rewrite
+              # it to run the worker in the FOREGROUND so the container stays
+              # alive and the pod is the long-running task daemon.
+              cat > /mnt/entrypoint.d/910_start_worker.sh <<'WORKEOF'
+              #! /bin/bash -e
+              if [[ -n "${MYW_TASK_WORKERS}" && "${MYW_TASK_WORKERS}" -gt 0 ]]; then
+                  command="myw_task start --workers ${MYW_TASK_WORKERS}"
+                  if [[ -n "${MYW_TASK_QUEUES}" ]]; then
+                      command+=" --queues ${MYW_TASK_QUEUES}"
+                  fi
+                  exec $command
+              fi
+              WORKEOF
+
               chmod -R 777 /mnt/entrypoint.d/ 2>/dev/null
+
               cp -a /opt/iqgeo/platform/WebApps/* /mnt/webapps/ 2>/dev/null
               cp -a /opt/iqgeo/data/* /mnt/data/ 2>/dev/null
               cp -a /etc/apache2/sites-enabled/* /mnt/apache-sites/ 2>/dev/null
@@ -250,118 +270,6 @@ workerGroups:
     autoscaling:
       enabled: false
 
-  - name: replication-worker
-    taskQueues: ['platform_extracts']
-    replicaCount: 1
-    taskWorkers: 1
-    taskTimeout: 18000
-    securityContext:
-      runAsNonRoot: true
-      readOnlyRootFilesystem: false
-      allowPrivilegeEscalation: false
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop:
-          - ALL
-    extraPodSpec: |
-      initContainers:
-        - name: fix-permissions
-          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.4-with-deps
-
-          command:
-            - sh
-            - -c
-            - |
-              set +e
-              cp -a /entrypoint.d/* /mnt/entrypoint.d/ 2>/dev/null
-              rm -f /mnt/entrypoint.d/231-oidc-config.sh 2>/dev/null
-              chmod -R 777 /mnt/entrypoint.d/ 2>/dev/null
-              cp -a /opt/iqgeo/platform/WebApps/* /mnt/webapps/ 2>/dev/null
-              cp -a /opt/iqgeo/data/* /mnt/data/ 2>/dev/null
-              cp -a /etc/apache2/sites-enabled/* /mnt/apache-sites/ 2>/dev/null
-              cp /usr/sbin/apache2 /mnt/apache-bin/apache2 2>/dev/null
-              chmod a+rx /mnt/apache-bin/apache2 2>/dev/null
-              exit 0
-          volumeMounts:
-            - name: entrypoint-scripts
-              mountPath: /mnt/entrypoint.d
-            - name: webapps
-              mountPath: /mnt/webapps
-            - name: iqgeo-data
-              mountPath: /mnt/data
-            - name: apache-sites
-              mountPath: /mnt/apache-sites
-            - name: apache-bin
-              mountPath: /mnt/apache-bin
-          resources:
-            limits:
-              cpu: 200m
-              memory: 256Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-    extraVolumes:
-      - name: entrypoint-scripts
-        emptyDir: {}
-      - name: webapps
-        emptyDir: {}
-      - name: iqgeo-data
-        emptyDir: {}
-      - name: apache-sites
-        emptyDir: {}
-      - name: apache-bin
-        emptyDir: {}
-    extraVolumeMounts:
-      - name: entrypoint-scripts
-        mountPath: /entrypoint.d
-      - name: webapps
-        mountPath: /opt/iqgeo/platform/WebApps
-      - name: iqgeo-data
-        mountPath: /opt/iqgeo/data
-      - name: apache-sites
-        mountPath: /etc/apache2/sites-enabled
-      - name: apache-bin
-        mountPath: /usr/sbin/apache2
-        subPath: apache2
-    resources:
-      limits:
-        cpu: "2"
-        memory: 4Gi
-      requests:
-        cpu: 500m
-        memory: 1Gi
-    autoscaling:
-      enabled: false
-
-worker:
-  enabled: true
-  taskQueues: []
-  taskWorkers: 2
-  taskTimeout: 3600
-  terminationGracePeriodSeconds: 30
-  replicaCount: 1
-  autoscaling:
-    enabled: false
-  resources:
-    limits:
-      cpu: "1"
-      memory: 2Gi
-    requests:
-      cpu: 250m
-      memory: 512Mi
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1013860000
-    readOnlyRootFilesystem: false
-    allowPrivilegeEscalation: false
-    seccompProfile:
-      type: RuntimeDefault
-    capabilities:
-      drop:
-        - ALL
-
-# Internal Redis
 redis:
   enabled: true
   master:
@@ -374,14 +282,13 @@ redis:
         cpu: 100m
         memory: 256Mi
     persistence:
-      storageClass: "gp3"
+      storageClass: "ontap-nas-ssd"
       size: 8Gi
     podSecurityContext:
       enabled: false
     containerSecurityContext:
       enabled: false
 
-# CronJobs
 cronjob:
   enabled: true
   resources:
@@ -401,14 +308,6 @@ cronjobs:
     backoffLimit: 3
     maintains: "transaction_logs usage_stats replicas statistics"
     includeSharedData: false
-    resources:
-      limits:
-        cpu: "1"
-        memory: 1Gi
-      requests:
-        cpu: 250m
-        memory: 256Mi
-
   dbVacuum:
     schedule: "30 05 * * 6"
     commandRef: dbVacuum
@@ -416,24 +315,13 @@ cronjobs:
     startingDeadlineSeconds: 300
     backoffLimit: 3
     includeSharedData: false
-    resources:
-      limits:
-        cpu: "1"
-        memory: 1Gi
-      requests:
-        cpu: 250m
-        memory: 256Mi
-
   replicationExport:
     enabled: false
-
   replicationExportWithCode:
     enabled: false
-
   realignExtracts:
     enabled: false
 
-# Pod-level security context (OpenShift restricted-v2 compatible)
 podSecurityContext:
   runAsNonRoot: true
 
@@ -446,7 +334,6 @@ securityContext:
     drop:
       - ALL
 
-# Extra env vars
 extraPodEnv:
   - name: SEND_ERROR_LOG_TO_STDERR
     value: 'YES'
@@ -454,9 +341,6 @@ extraPodEnv:
     value: 'YES'
   - name: APACHE_TIMEOUT
     value: '1200'
-
-nameOverride: ""
-fullnameOverride: ""
 
 serviceAccount:
   create: true

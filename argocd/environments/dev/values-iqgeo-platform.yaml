@@ -32,8 +32,9 @@ global:
 image:
   projectRegistry: image-registry.openshift-image-registry.svc:5000
   projectRepository: suzuki3182-dev
-  tag: "7.5-with-deps"
+  tag: "7.4-with-deps"
   pullPolicy: Always
+
   pullSecrets:
     - name: container-registry
     - name: iqgeo-platform-dockercfg-n7sq7
@@ -41,7 +42,8 @@ image:
     repository: "image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver"
   tools:
     repository: "image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver"
-    tag: "7.5-with-deps"
+    tag: "7.4-with-deps"
+
 
 # Disable nginx Ingress — use OpenShift Route instead
 ingress:
@@ -86,7 +88,7 @@ appserverGroups:
     extraPodSpec: |
       initContainers:
         - name: fix-permissions
-          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.5-with-deps
+          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.4-with-deps
           command:
             - sh
             - -c
@@ -94,6 +96,7 @@ appserverGroups:
               set +e
               cp -a /entrypoint.d/* /mnt/entrypoint.d/
               chmod -R a+rwx /mnt/entrypoint.d/
+
               cp -a /etc/apache2/sites-enabled/* /mnt/apache-sites/
               cp -a /opt/iqgeo/data/* /mnt/data/
               mkdir -p /mnt/config/oidc
@@ -167,7 +170,7 @@ workerGroups:
     extraPodSpec: |
       initContainers:
         - name: fix-permissions
-          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.5-with-deps
+          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.4-with-deps
           command:
             - sh
             - -c
@@ -227,6 +230,7 @@ workerGroups:
       limits:
         cpu: "1"
         memory: 2Gi
+
       requests:
         cpu: 250m
         memory: 512Mi
@@ -250,7 +254,7 @@ workerGroups:
     extraPodSpec: |
       initContainers:
         - name: fix-permissions
-          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.5-with-deps
+          image: image-registry.openshift-image-registry.svc:5000/suzuki3182-dev/platform-appserver:7.4-with-deps
           command:
             - sh
             - -c
@@ -310,6 +314,7 @@ workerGroups:
       limits:
         cpu: "2"
         memory: 4Gi
+
       requests:
         cpu: 500m
         memory: 1Gi

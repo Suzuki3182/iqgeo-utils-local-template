@@ -1,11 +1,11 @@
 {
-    "name": "test_sandbox",
+    "name": "qa",
     // Dev Container display name
-    "display_name": "Project for IQGeo Sandbox Testing",
+    "display_name": "Project for IQGeo QA Testing",
     // Prefix to use in container names and Docker compose
-    "prefix": "sandbox",
+    "prefix": "qa",
     // The name of the database to use. (Should be different from "iqgeo" so myw_db can drop it - uses iqgeo user for connection)
-    "db_name": "sandbox",
+    "db_name": "qa",
     "platform": {
         // The version of the IQGeo platform to use. Options are 7.0, and above
         "version": "7.4",

@@ -24,7 +24,8 @@ image:
   projectRegistry: image-registry.openshift-image-registry.svc:5000
   projectRepository: iqgeo-prod
   # Prod uses a pinned, tested release tag
-  tag: "7.5.0"
+  tag: "7.4.0"
+
   pullPolicy: IfNotPresent
 
 ingress:

@@ -1,4 +1,5 @@
-# OpenShift-specific values overlay for IQGeo Platform 7.5
+# OpenShift-specific values overlay for IQGeo Platform 7.4
+
 # Target namespace: suzuki3182-dev
 # OpenShift cluster: api.rm2.thpm.p1.openshiftapps.com
 # UID range: 1013860000/10000

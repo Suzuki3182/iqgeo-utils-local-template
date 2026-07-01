@@ -1,0 +1,7 @@
+# Enforce LF line endings for shell scripts and entrypoints so they run
+# correctly inside Linux containers regardless of the host OS (Windows CRLF).
+*.sh text eol=lf
+entrypoint.d/* text eol=lf
+*.bash text eol=lf
+Dockerfile* text eol=lf
+dockerfile* text eol=lf

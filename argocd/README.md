@@ -1,6 +1,7 @@
 # Argo CD GitOps Configuration for IQGeo Platform
 
-This directory contains the Argo CD configuration for deploying the IQGeo Platform 7.5 to OpenShift using a GitOps workflow.
+This directory contains the Argo CD configuration for deploying the IQGeo Platform 7.4 to OpenShift using a GitOps workflow.
+
 
 ## Architecture
 
